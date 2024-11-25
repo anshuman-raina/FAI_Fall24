@@ -42,7 +42,7 @@ def apply_random_shearing(image, bbox, max_shear=15):
     return sheared_image, sheared_bbox
 
 class DataGenerator(Sequence):
-    def __init__(self, dataframe, image_folder, batch_size=16, target_size=(512, 512), augment=True, shuffle=True):
+    def __init__(self, dataframe, image_folder, batch_size=16, target_size=(640, 640), augment=True, shuffle=True):
         self.dataframe = dataframe
         self.image_folder = image_folder
         self.batch_size = batch_size
@@ -71,27 +71,24 @@ class DataGenerator(Sequence):
     def __data_generation(self, batch_indices):
         batch_size = len(batch_indices)
         X = np.zeros((batch_size, *self.target_size, 3), dtype=np.float32)
-        y_class = np.zeros((batch_size, 1))  
-        y_bbox = np.zeros((batch_size, 4))
-        
+        y_class = np.zeros((batch_size,), dtype=np.int32)  # Integer labels for classification
+        y_bbox = np.zeros((batch_size, 4), dtype=np.float32)  # Bounding box coordinates
+
         for i, idx in enumerate(batch_indices):
             row = self.dataframe.iloc[idx]
             image_path = os.path.join(self.image_folder, row['image_name'])
             
             # Load and preprocess image
             image, bbox = self.preprocess_image(image_path, row)
-            #image = cv2.resize(image, self.target_size) 
             X[i] = image
-        
-            # Set classification label (1 for 'empty-shelf', 0 otherwise)
-            y_class[i, 0] = 1 if row['label_name'] == 'empty-shelf' else 0 
-            
-            # Ensure bounding box has 4 coordinates
-            if bbox is None:
-                y_bbox[i] = [0, 0, 0, 0]  # Or use a default bbox if none is present
-            else:
-                y_bbox[i] = bbox
-        
+
+            # Assign class label
+            label_map = {'empty-shelf': 0, 'product': 1}
+            y_class[i] = label_map[row['label_name']]  # Map label name to integer
+
+            # Assign bounding box
+            y_bbox[i] = bbox
+
         return X, {'classification_output': y_class, 'bbox_output': y_bbox}
         
     def preprocess_image(self, image_path, row):

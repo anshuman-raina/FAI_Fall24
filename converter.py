@@ -1,65 +1,57 @@
+
 import os
-import csv
+import pandas as pd
 
-def yolo_to_custom_format(input_dir, output_csv):
-    # Define folders
-    folders = ['train', 'test', 'valid']
+import os
+import pandas as pd
+
+def parse_yolov5_obb(annotations_dir, image_folder):
     data = []
-
-    for folder in folders:
-        images_dir = os.path.join(input_dir, folder, 'images')
-        labels_dir = os.path.join(input_dir, folder, 'labelTxt')
-        
-        if not os.path.exists(images_dir) or not os.path.exists(labels_dir):
-            print(f"Error: Missing directories in {folder}")
+    for label_file in os.listdir(annotations_dir):
+        label_path = os.path.join(annotations_dir, label_file)
+        image_name = label_file.replace('.txt', '.jpg')
+        image_path = os.path.join(image_folder, image_name)
+        if not os.path.exists(image_path):
+            print(f"Warning: Image file {image_name} not found for {label_file}")
             continue
-        
-        for label_file in os.listdir(labels_dir):
-            label_path = os.path.join(labels_dir, label_file)
-            image_name = label_file.replace('.txt', '.jpg')
 
-            image_path = os.path.join(images_dir, image_name)
-            if not os.path.exists(image_path):
-                print(f"Warning: Missing image for {label_file}")
-                continue
+        with open(label_path, 'r') as f:
+            for line in f:
+                parts = line.strip().split()
+                if len(parts) < 10:
+                    print(f"Skipping malformed line in {label_file}: {line.strip()}")
+                    continue
 
-            # Read image dimensions
-            try:
-                from PIL import Image
-                with Image.open(image_path) as img:
-                    image_width, image_height = img.size
-            except ImportError:
-                print("Pillow library is required for this script.")
-                return
+                try:
+                    # Extract corner coordinates
+                    x1, y1 = float(parts[0]), float(parts[1])
+                    x2, y2 = float(parts[2]), float(parts[3])
+                    x3, y3 = float(parts[4]), float(parts[5])
+                    x4, y4 = float(parts[6]), float(parts[7])
 
-            with open(label_path, 'r') as f:
-                for line in f:
-                    # YOLOv5-oriented bounding box format: class cx cy w h
-                    parts = line.strip().split()
-                    if len(parts) < 5:
-                        continue
+                    # Calculate bounding box center, width, and height
+                    x_center = (x1 + x2 + x3 + x4) / 4
+                    y_center = (y1 + y2 + y3 + y4) / 4
+                    width = max(x1, x2, x3, x4) - min(x1, x2, x3, x4)
+                    height = max(y1, y2, y3, y4) - min(y1, y2, y3, y4)
 
-                    label_name = "empty-shelf"  # Assuming class 0 corresponds to empty-shelf
-                    bbox_x = int(float(parts[1]) * image_width - (float(parts[3]) * image_width / 2))
-                    bbox_y = int(float(parts[2]) * image_height - (float(parts[4]) * image_height / 2))
-                    bbox_width = int(float(parts[3]) * image_width)
-                    bbox_height = int(float(parts[4]) * image_height)
+                    # Extract label
+                    label_name = parts[8]
+                    label_map = {"empty-shelf": 0, "product": 1}  # Map labels to integers
+                    label = label_map.get(label_name, 0)
 
-                    data.append([
-                        label_name, bbox_x, bbox_y, bbox_width, bbox_height,
-                        image_name, image_width, image_height
-                    ])
+                except ValueError:
+                    print(f"Skipping invalid line in {label_file}: {line.strip()}")
+                    continue
 
-    # Write to CSV
-    with open(output_csv, 'w', newline='') as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(['label_name', 'bbox_x', 'bbox_y', 'bbox_width', 'bbox_height',
-                         'image_name', 'image_width', 'image_height'])
-        writer.writerows(data)
-    
-    print(f"Data successfully converted and saved to {output_csv}")
+                data.append({
+                    'image_name': image_name,
+                    'label': label,
+                    'label_name': label_name,  # Add the label_name here
+                    'bbox_x': x_center,
+                    'bbox_y': y_center,
+                    'bbox_width': width,
+                    'bbox_height': height,
+                })
 
-# Example usage
-input_directory = "C:\\2024 ClassesNEU\\5100\\FAI_Fall24\\dataResized"  # Replace with your directory
-output_csv_file = "output_data.csv"
-yolo_to_custom_format(input_directory, output_csv_file)
+    return pd.DataFrame(data)
