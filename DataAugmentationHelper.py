@@ -44,7 +44,7 @@ def apply_random_shearing(image, bbox, max_shear=15):
     return sheared_image, sheared_bbox
 
 class DataGenerator(Sequence):
-    def __init__(self, dataframe, image_folder, output_folder, batch_size=16, target_size=(512, 512), 
+    def __init__(self, dataframe, image_folder, output_folder, batch_size=16, target_size=(640, 640), 
                  augment=True, augmentations_per_image=2, shuffle=True):
         """
         DataGenerator with optional data augmentation to expand the dataset.
@@ -171,21 +171,23 @@ class DataGenerator(Sequence):
         return X, {'classification_output': y_class, 'bbox_output': y_bbox}
         
     def preprocess_image(self, image_path, row):
+        # Read image as-is
         image = cv2.imread(image_path)
         if image is None:
             raise ValueError(f"Could not load image at {image_path}")
-            
-        original_height, original_width = image.shape[:2]
         
-        # Normalize bbox coordinates
-        x_min = row['bbox_x'] / original_width
-        y_min = row['bbox_y'] / original_height
-        x_max = (row['bbox_x'] + row['bbox_width']) / original_width
-        y_max = (row['bbox_y'] + row['bbox_height']) / original_height
-        bbox = [x_min, y_min, x_max, y_max]
+        # Bounding box calculations
+        x_min = row['bbox_x']
+        y_min = row['bbox_y']
+        x_max = row['bbox_x'] + row['bbox_width']
+        y_max = row['bbox_y'] + row['bbox_height']
         
-        # Resize and normalize image
-        image = cv2.resize(image, self.target_size)
-        image = image.astype(np.float32) / 255.0
+        # Normalize coordinates to [0, 1] range
+        bbox = [
+            x_min / 640, 
+            y_min / 640, 
+            x_max / 640, 
+            y_max / 640
+        ]
         
         return image, np.array(bbox)

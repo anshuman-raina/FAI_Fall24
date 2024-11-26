@@ -9,11 +9,11 @@ logging.basicConfig(level=logging.INFO)
 
 try:
     # Load the trained model
-    model = load_model('empty_shelf_detector.h5', compile=False)
+    model = load_model('latest.h5', compile=False)
     logging.info("Model loaded successfully")
 
     # Make prediction on a single image
-    result_image = predict_on_image('sample2.jpg', model)
+    result_image = predict_on_image('sample4.jpg', model)
     logging.info("Prediction completed")
 
     # Display or save the result
