@@ -44,21 +44,8 @@ def apply_random_shearing(image, bbox, max_shear=15):
     return sheared_image, sheared_bbox
 
 class DataGenerator(Sequence):
-    def __init__(self, dataframe, image_folder, output_folder, batch_size=16, target_size=(640, 640), 
-                 augment=True, augmentations_per_image=2, shuffle=True):
-        """
-        DataGenerator with optional data augmentation to expand the dataset.
-        
-        Parameters:
-        - dataframe: Original DataFrame with image paths and bbox details.
-        - image_folder: Folder containing the original images.
-        - output_folder: Folder to save augmented images.
-        - batch_size: Number of samples per batch.
-        - target_size: Tuple indicating image size (height, width).
-        - augment: Whether to augment data.
-        - augmentations_per_image: Number of augmented images to create per original image.
-        - shuffle: Whether to shuffle data after each epoch.
-        """
+
+    def __init__(self, dataframe, image_folder, batch_size=16, target_size=(640, 640), augment=True, shuffle=True):
         self.dataframe = dataframe
         self.image_folder = image_folder
         self.output_folder = output_folder
@@ -143,9 +130,9 @@ class DataGenerator(Sequence):
     def __data_generation(self, batch_indices):
         batch_size = len(batch_indices)
         X = np.zeros((batch_size, *self.target_size, 3), dtype=np.float32)
-        y_class = np.zeros((batch_size, 1))  
-        y_bbox = np.zeros((batch_size, 4))
-        
+        y_class = np.zeros((batch_size,), dtype=np.int32)  # Integer labels for classification
+        y_bbox = np.zeros((batch_size, 4), dtype=np.float32)  # Bounding box coordinates
+
         for i, idx in enumerate(batch_indices):
             row = self.dataframe.iloc[idx]
             image_path = os.path.join(self.output_folder, row['image_name'])
@@ -153,21 +140,15 @@ class DataGenerator(Sequence):
             # Load and preprocess image
             image, bbox = self.preprocess_image(image_path, row)
             X[i] = image
-        
-            # Updated classification logic to handle multiple labels
-            if row['label_name'] == 'empty-shelf':
-                y_class[i, 0] = 1  # Empty shelf
-            elif row['label_name'] == 'product':
-                y_class[i, 0] = 2  # Product
-            else:
-                y_class[i, 0] = 0  # Other/background
-            
-            # Ensure bounding box has 4 coordinates
-            if bbox is None:
-                y_bbox[i] = [0, 0, 0, 0]  # Or use a default bbox if none is present
-            else:
-                y_bbox[i] = bbox
-        
+
+
+            # Assign class label
+            label_map = {'empty-shelf': 0, 'product': 1}
+            y_class[i] = label_map[row['label_name']]  # Map label name to integer
+
+            # Assign bounding box
+            y_bbox[i] = bbox
+
         return X, {'classification_output': y_class, 'bbox_output': y_bbox}
         
     def preprocess_image(self, image_path, row):
