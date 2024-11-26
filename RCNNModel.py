@@ -44,6 +44,6 @@ def build_rcnn_model(input_shape=(640, 640, 3)):
     bbox_output = layers.Dense(4, name='bbox_output')(x)
     
     # Create Model
-    model = tf.keras.Model(inputs=input_tensor, outputs=[bbox_output, classification_output])
+    model = tf.keras.Model(inputs=input_tensor, outputs=[classification_output, bbox_output])
     
     return model
