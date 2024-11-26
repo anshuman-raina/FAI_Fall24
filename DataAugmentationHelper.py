@@ -45,14 +45,12 @@ def apply_random_shearing(image, bbox, max_shear=15):
 
 class DataGenerator(Sequence):
 
-    def __init__(self, dataframe, image_folder, batch_size=16, target_size=(640, 640), augment=True, shuffle=True):
+    def __init__(self, dataframe, image_folder, batch_size=16, target_size=(640, 640), augment=False, shuffle=False):
         self.dataframe = dataframe
         self.image_folder = image_folder
-        self.output_folder = output_folder
         self.batch_size = batch_size
         self.target_size = target_size
         self.augment = augment
-        self.augmentations_per_image = augmentations_per_image
         self.shuffle = shuffle
 
         if self.augment:
@@ -135,7 +133,7 @@ class DataGenerator(Sequence):
 
         for i, idx in enumerate(batch_indices):
             row = self.dataframe.iloc[idx]
-            image_path = os.path.join(self.output_folder, row['image_name'])
+            image_path = os.path.join(self.image_folder, row['image_name'])
             
             # Load and preprocess image
             image, bbox = self.preprocess_image(image_path, row)

@@ -6,3 +6,4 @@ cv2
 tensorflow
 google
 zipfile
+opencv-python
