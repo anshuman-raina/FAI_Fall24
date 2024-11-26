@@ -8,7 +8,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 try:
-    # Load the trained model
     model = load_model('empty_shelf_detector_rcnn_resnet.h5', compile=False)
     logging.info("Model loaded successfully")
 

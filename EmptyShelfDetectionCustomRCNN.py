@@ -30,6 +30,7 @@ def main():
     
     # Build and compile model
     tf.keras.backend.clear_session()
+
     model = build_rcnn_model(input_shape=(640, 640, 3))
 
     model.compile(
@@ -40,7 +41,7 @@ def main():
         },
         loss_weights={
             'classification_output': 1.0,
-            'bbox_output': 1.0,
+            'bbox_output': 1.5,
         },
         metrics={
             'classification_output': 'accuracy',
@@ -48,7 +49,6 @@ def main():
         },
     )
 
-    # Train the model
     model.fit(
         train_generator,
         epochs=args.epochs,
@@ -62,9 +62,8 @@ def predict_on_image(image_path, model, target_size=(640, 640)):
     image = cv2.imread(image_path)
     original_height, original_width = image.shape[:2]
     
-    # Preprocess image
-    resized_image = cv2.resize(image, target_size)
-    resized_image = resized_image.astype(np.float32) / 255.0
+    # No resizing or normalization
+    resized_image = image.copy()
     resized_image = np.expand_dims(resized_image, axis=0)
     
     # Make prediction
@@ -76,28 +75,14 @@ def predict_on_image(image_path, model, target_size=(640, 640)):
     
     # Map class index to label
     label_map =  {0: 'empty-shelf', 1: 'product'}
-
     label_name = label_map[class_index]
     
-    print("Original bbox_pred:", bbox_pred)
-    print("Class probabilities:", class_probs)
-    
-    # Scale bbox coordinates from 512x512 to original image size
-    scale_x = original_width / target_size[0]
-    scale_y = original_height / target_size[1]
-    
-    x_min = int(bbox_pred[0, 0] * scale_x)
-    y_min = int(bbox_pred[0, 1] * scale_y)
-    x_max = int(bbox_pred[0, 2] * scale_x)
-    y_max = int(bbox_pred[0, 3] * scale_y)
-    
-    print(f"Drawing box at: ({x_min}, {y_min}, {x_max}, {y_max})")
-    
-    # Ensure coordinates are within image bounds
-    x_min = max(0, min(x_min, original_width - 1))
-    y_min = max(0, min(y_min, original_height - 1))
-    x_max = max(0, min(x_max, original_width - 1))
-    y_max = max(0, min(y_max, original_height - 1))
+    # Denormalize bbox predictions (assuming they're in [0, 1] range)
+    x_min = int(bbox_pred[0, 0] * original_width)
+    y_min = int(bbox_pred[0, 1] * original_height)
+    x_max = int(bbox_pred[0, 2] * original_width)
+    y_max = int(bbox_pred[0, 3] * original_height)
+
     
     # Draw predictions only if box coordinates make sense
     if x_min < x_max and y_min < y_max:
