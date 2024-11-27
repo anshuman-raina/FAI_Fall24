@@ -1,9 +1,44 @@
-from EmptyShelfDetectionCustomRCNN import predict_on_image
-from tensorflow.keras.models import load_model
+import os
+
 import cv2
 import numpy as np
+from tensorflow.keras.models import load_model
+from converter import parse_yolov5_obb
 import logging
 
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+
+def main():
+    try:
+        # Load the trained model
+        model = load_model('empty_shelf_detector_rcnn_resnet (1).h5', compile=False)
+        logging.info("Model loaded successfully")
+
+        # Define dataset directories
+        datasets = {
+            'test': ('EMPTY SHELF FINAL/EMPTY SHELF FINAL/test/labelTxt', 'EMPTY SHELF FINAL/EMPTY SHELF FINAL/test/images'),
+            'valid': ('EMPTY SHELF FINAL/EMPTY SHELF FINAL/valid/labelTxt', 'EMPTY SHELF FINAL/EMPTY SHELF FINAL/valid/images'),
+        }
+
+        # Evaluate on datasets
+        for split, (annotations_dir, image_folder) in datasets.items():
+            logging.info(f"Evaluating on {split} dataset...")
+
+            # Parse the annotations and load the dataset
+            data = parse_yolov5_obb(annotations_dir, image_folder)
+            if data.empty:
+                logging.warning(f"No data found in {split} dataset!")
+                continue
+
+            # Evaluate model performance
+            logging.info(f"Starting evaluation for {split} dataset...")
+            evaluate_model(model, data, image_folder=image_folder)
+            logging.info(f"Completed evaluation for {split} dataset.")
+
+    except Exception as e:
+        logging.error(f"An error occurred: {str(e)}")
+        
 
 def calculate_iou(true_bbox, pred_bbox):
     """
@@ -14,28 +49,28 @@ def calculate_iou(true_bbox, pred_bbox):
     y1 = max(true_bbox[1], pred_bbox[1])
     x2 = min(true_bbox[2], pred_bbox[2])
     y2 = min(true_bbox[3], pred_bbox[3])
-
+    
     intersection = max(0, x2 - x1) * max(0, y2 - y1)
-
+    
     # Calculate the areas
     true_area = (true_bbox[2] - true_bbox[0]) * (true_bbox[3] - true_bbox[1])
     pred_area = (pred_bbox[2] - pred_bbox[0]) * (pred_bbox[3] - pred_bbox[1])
-
+    
     # Calculate the union
     union = true_area + pred_area - intersection
-
+    
     # Compute IoU
     iou = intersection / union if union > 0 else 0
     return iou
 
-
-def evaluate_model(model, test_data, iou_threshold=0.25, target_size=(640, 640)):
+def evaluate_model(model, test_data, image_folder, iou_threshold=0.2, target_size=(640, 640)):
     """
     Evaluate the model on a given dataset.
 
     Parameters:
         model: Trained model.
         test_data: DataFrame containing test data with columns for image paths, bounding boxes, and labels.
+        image_folder: Base folder containing images.
         iou_threshold: IoU threshold to consider a bounding box prediction correct.
         target_size: Target image size for resizing during prediction.
     """
@@ -43,8 +78,12 @@ def evaluate_model(model, test_data, iou_threshold=0.25, target_size=(640, 640))
     correct_classifications = 0
     correct_bboxes = 0
 
+    # Add a counter for tracking progress
+    processed_count = 0
+
     for idx, row in test_data.iterrows():
-        image_path = row['image_name']
+        # Construct full image path
+        image_path = os.path.join(image_folder, row['image_name'])
         true_class = row['label']
         true_bbox = [
             row['bbox_x'],
@@ -56,7 +95,7 @@ def evaluate_model(model, test_data, iou_threshold=0.25, target_size=(640, 640))
         # Load and preprocess image
         image = cv2.imread(image_path)
         if image is None:
-            print(f"Warning: Could not load image at {image_path}")
+            logging.warning(f"Warning: Could not load image at {image_path}")
             continue
 
         original_height, original_width = image.shape[:2]
@@ -86,6 +125,11 @@ def evaluate_model(model, test_data, iou_threshold=0.25, target_size=(640, 640))
         if iou >= iou_threshold:
             correct_bboxes += 1
 
+        # Increment processed count and print progress
+        processed_count += 1
+        if processed_count % 10 == 0 or processed_count == total_samples:
+            print(f"Processed {processed_count}/{total_samples} images in directory: {image_folder}...")
+
     # Compute metrics
     classification_accuracy = correct_classifications / total_samples
     bbox_accuracy = correct_bboxes / total_samples
@@ -93,3 +137,7 @@ def evaluate_model(model, test_data, iou_threshold=0.25, target_size=(640, 640))
     # Output the results
     print(f"Classification Accuracy: {classification_accuracy:.2f}")
     print(f"BBox Accuracy (IoU ≥ {iou_threshold}): {bbox_accuracy:.2f}")
+
+
+if __name__ == "__main__":
+    main()
