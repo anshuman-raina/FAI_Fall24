@@ -58,11 +58,12 @@ def main():
     # Save model
     model.save('empty_shelf_detector_rcnn_resnet.h5')
 
-def predict_on_image(image_path, model, target_size=(640, 640)):
+def predict_on_image(image_path, model, label_map={0: 'empty-shelf', 1: 'product'}):
+    # Read image and get original dimensions
     image = cv2.imread(image_path)
     original_height, original_width = image.shape[:2]
     
-    # No resizing or normalization
+    # Prepare image for prediction
     resized_image = image.copy()
     resized_image = np.expand_dims(resized_image, axis=0)
     
@@ -73,26 +74,24 @@ def predict_on_image(image_path, model, target_size=(640, 640)):
     class_index = np.argmax(class_pred[0])
     class_probs = class_pred[0]
     
-    # Map class index to label
-    label_map =  {0: 'empty-shelf', 1: 'product'}
-    label_name = label_map[class_index]
+    # Get label name
+    label_name = label_map.get(class_index, 'Unknown')
     
-    # Denormalize bbox predictions (assuming they're in [0, 1] range)
-    x_min = int(bbox_pred[0, 0] * original_width)
-    y_min = int(bbox_pred[0, 1] * original_height)
-    x_max = int(bbox_pred[0, 2] * original_width)
-    y_max = int(bbox_pred[0, 3] * original_height)
-
+    # Extract top-left and bottom-right coordinates
+    x1, y1 = int(bbox_pred[0, 0] * original_width), int(bbox_pred[0, 1] * original_height)
+    x2, y2 = int(bbox_pred[0, 2] * original_width), int(bbox_pred[0, 3] * original_height)
     
-    # Draw predictions only if box coordinates make sense
-    if x_min < x_max and y_min < y_max:
-        cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-        cv2.putText(image, f'{label_name} ({class_probs[class_index]:.2f})', 
-                    (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-    else:
-        print("Warning: Invalid box coordinates")
+    # Validate and clamp coordinates
+    x1 = max(0, min(x1, original_width))
+    y1 = max(0, min(y1, original_height))
+    x2 = max(0, min(x2, original_width))
+    y2 = max(0, min(y2, original_height))
+    
+    # Draw if coordinates are valid
+    if x1 < x2 and y1 < y2:
+        cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        confidence = class_probs[class_index]
+        cv2.putText(image, f'{label_name} ({confidence:.2f})', 
+                    (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
     
     return image
-
-if __name__ == '__main__':
-    main()

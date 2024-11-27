@@ -9,7 +9,7 @@ import os
 class DataGenerator(Sequence):
 
     def __init__(self, dataframe, image_folder, batch_size=16, target_size=(640, 640), augment=False, shuffle=False):
-        # self.dataframe = dataframe[dataframe['label_name'] != 'product']
+        self.dataframe = dataframe
         self.image_folder = image_folder
         self.batch_size = batch_size
         self.target_size = target_size
@@ -54,7 +54,7 @@ class DataGenerator(Sequence):
             image, bbox = self.preprocess_image(image_path, row)
             X[i] = image
 
-            label_map = {'empty-shelf': 1, 'product': 2, }
+            label_map = {'empty-shelf': 0, 'product': 1, }
             y_class[i] = label_map[row['label_name']]  # Map label name to integer
 
             y_bbox[i] = bbox
