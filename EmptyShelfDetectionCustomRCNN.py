@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--epochs', type=int, default=5, help='Number of training epochs')
     parser.add_argument('--batch_size', type=int, default=100, help='Batch size for training')
     args = parser.parse_args()
-    
+
     # Load data
     data = parse_yolov5_obb(args.annotations_dir, args.image_folder)
     
@@ -106,3 +106,6 @@ def predict_on_image(image_path, model, label_map={0: 'empty-shelf', 1: 'product
                 (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
     
     return image
+
+if __name__ == "__main__":
+    main()

@@ -38,7 +38,7 @@ class DataGenerator(Sequence):
         if self.shuffle:
             np.random.shuffle(self.indices)
     
-    def __data_generation(self, batch_indices, draw_bboxes=False, output_folder="annotated_images"):
+    def __data_generation(self, batch_indices, draw_bboxes=True, output_folder="annotated_images"):
         batch_size = len(batch_indices)
         X = np.zeros((batch_size, *self.target_size, 3), dtype=np.float32)
         y_class = np.zeros((batch_size,), dtype=np.int32)  # Integer labels for classification
