@@ -29,11 +29,11 @@ def parse_yolov5_obb(annotations_dir, image_folder):
                     x3, y3 = float(parts[4]), float(parts[5])
                     x4, y4 = float(parts[6]), float(parts[7])
 
-                    # Calculate bounding box center, width, and height
-                    x_center = (x1 + x2 + x3 + x4) / 4
-                    y_center = (y1 + y2 + y3 + y4) / 4
-                    width = max(x1, x2, x3, x4) - min(x1, x2, x3, x4)
-                    height = max(y1, y2, y3, y4) - min(y1, y2, y3, y4)
+                    # Find top-left and bottom-right coordinates
+                    top_left_x = min(x1, x2, x3, x4)
+                    top_left_y = max(y1, y2, y3, y4)
+                    bottom_right_x = max(x1, x2, x3, x4)
+                    bottom_right_y = min(y1, y2, y3, y4)
 
                     # Extract label
                     label_name = parts[8]
@@ -47,11 +47,11 @@ def parse_yolov5_obb(annotations_dir, image_folder):
                 data.append({
                     'image_name': image_name,
                     'label': label,
-                    'label_name': label_name,  # Add the label_name here
-                    'bbox_x': x_center,
-                    'bbox_y': y_center,
-                    'bbox_width': width,
-                    'bbox_height': height,
+                    'label_name': label_name,  
+                    'x_top_left': top_left_x,
+                    'y_top_left': top_left_y,
+                    'x_bottom_right': bottom_right_x,
+                    'y_bottom_right': bottom_right_y,
                 })
 
     return pd.DataFrame(data)
