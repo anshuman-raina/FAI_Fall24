@@ -36,6 +36,10 @@ def build_rcnn_model(input_shape=(640, 640, 3)):
     # Fully Connected Layers
     x = layers.Dense(1024, activation='relu')(x)
     x = layers.Dropout(0.5)(x)
+    x = layers.Dense(512, activation='relu')(x)  # New fully connected layer
+    x = layers.Dropout(0.3)(x)  # New dropout layer
+    x = layers.Dense(256, activation='relu')(x)  # New fully connected layer
+    x = layers.Dropout(0.3)(x)  # New dropout layer
     
     # Classification Output (Binary: Empty or Not Empty)
     classification_output = layers.Dense(1, activation='sigmoid', name='classification_output')(x)

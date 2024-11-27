@@ -46,7 +46,7 @@ def apply_random_shearing(image, bbox, max_shear=15):
 class DataGenerator(Sequence):
 
     def __init__(self, dataframe, image_folder, batch_size=16, target_size=(640, 640), augment=False, shuffle=False):
-        self.dataframe = dataframe
+        self.dataframe = dataframe[dataframe['label_name'] != 'product']
         self.image_folder = image_folder
         self.batch_size = batch_size
         self.target_size = target_size
@@ -141,7 +141,7 @@ class DataGenerator(Sequence):
 
 
             # Assign class label
-            label_map = {'empty-shelf': 0, 'product': 1}
+            label_map = {'empty-shelf': 1}
             y_class[i] = label_map[row['label_name']]  # Map label name to integer
 
             # Assign bounding box
