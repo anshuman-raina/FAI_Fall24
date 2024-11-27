@@ -74,12 +74,21 @@ def predict_on_image(image_path, model, label_map={0: 'empty-shelf', 1: 'product
     class_index = np.argmax(class_pred[0])
     class_probs = class_pred[0]
     
+    # Detailed print statements for debugging
+    print("Raw bbox_pred:", bbox_pred)
+    print("Raw bbox_pred shape:", bbox_pred.shape)
+    print("Raw class_pred:", class_pred)
+    print("Class probabilities:", class_probs)
+    print("Class index:", class_index)
+    
     # Get label name
     label_name = label_map.get(class_index, 'Unknown')
     
-    # Extract top-left and bottom-right coordinates
-    x1, y1 = int(bbox_pred[0, 0] * original_width), int(bbox_pred[0, 1] * original_height)
-    x2, y2 = int(bbox_pred[0, 2] * original_width), int(bbox_pred[0, 3] * original_height)
+    # Extract coordinates with full details
+    x1 = int(bbox_pred[0, 0])
+    y1 = int(bbox_pred[0, 1])
+    x2 = int(bbox_pred[0, 2])
+    y2 = int(bbox_pred[0, 3])
     
     # Validate and clamp coordinates
     x1 = max(0, min(x1, original_width))
@@ -87,11 +96,13 @@ def predict_on_image(image_path, model, label_map={0: 'empty-shelf', 1: 'product
     x2 = max(0, min(x2, original_width))
     y2 = max(0, min(y2, original_height))
     
-    # Draw if coordinates are valid
-    if x1 < x2 and y1 < y2:
-        cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        confidence = class_probs[class_index]
-        cv2.putText(image, f'{label_name} ({confidence:.2f})', 
-                    (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+    print(f"Clamped coordinates: x1={x1}, y1={y1}, x2={x2}, y2={y2}")
+    
+    # Always draw the rectangle, even if coordinates seem invalid
+    cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    
+    confidence = class_probs[class_index]
+    cv2.putText(image, f'{label_name} ({confidence:.2f})', 
+                (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
     
     return image
