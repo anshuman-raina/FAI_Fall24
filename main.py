@@ -112,7 +112,7 @@ def evaluate_model(model, test_data, image_folder, iou_threshold=0.2):
         # Predict bounding box and label
         pred_bbox, pred_label_probs = model.predict(np.expand_dims(normalized_image, axis=0))
         pred_label = np.argmax(pred_label_probs[0])
-
+        original_height, original_width = image.shape[:2]
         # Extract predicted bounding box
         pred_bbox = [
         int(pred_bbox[0, 0] * original_width),
