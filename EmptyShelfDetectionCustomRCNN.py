@@ -40,12 +40,12 @@ def main():
             'bbox_output': 'mean_squared_error',
         },
         loss_weights={
-            'classification_output': 1.0,
-            'bbox_output': 1.5,
+            'classification_output': 0.2,
+            'bbox_output': 2.0,
         },
         metrics={
             'classification_output': 'accuracy',
-            'bbox_output': 'mse',
+            'bbox_output': ['mse', tf.keras.metrics.MeanAbsoluteError(name='mae')],
         },
     )
 

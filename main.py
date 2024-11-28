@@ -102,15 +102,26 @@ def evaluate_model(model, test_data, image_folder, iou_threshold=0.2):
         if image is None:
             logging.warning(f"Warning: Could not load image at {image_path}")
             continue
-        # Preprocess image similarly to DataGenerator
+        #Preprocess image similarly to the updated preprocess_image function
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        normalized_image = gray_image.astype(np.float32) / 255.0
-        normalized_image = cv2.medianBlur(normalized_image, 3)
+        
+        # Apply adaptive thresholding
+        thresholded_image = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+        
+        # Apply CLAHE
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        clahe_image = clahe.apply(thresholded_image)
+        
+        # Normalize image (0-1 range)
+        normalized_image = clahe_image.astype(np.float32) / 255.0
+        
+        # Noise reduction using median blur
+        preprocessed_image = cv2.medianBlur(normalized_image, 3)  # 3x3 kernel
         # Create a copy of the image for drawing
         draw_image = image.copy()
-
+        model_input = np.expand_dims(preprocessed_image, axis=(0, -1))
         # Predict bounding box and label
-        pred_bbox, pred_label_probs = model.predict(np.expand_dims(normalized_image, axis=0))
+        pred_bbox, pred_label_probs = model.predict(np.expand_dims(model_input, axis=0))
         pred_label = np.argmax(pred_label_probs[0])
         original_height, original_width = image.shape[:2]
         # Extract predicted bounding box

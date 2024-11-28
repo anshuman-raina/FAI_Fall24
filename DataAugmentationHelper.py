@@ -74,6 +74,13 @@ class DataGenerator(Sequence):
         
         # Convert to grayscale
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # Apply adaptive thresholding
+        image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+        
+        # Apply CLAHE
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        image = clahe.apply(image)
         
         # Normalize image (0-1 range)
         image = image.astype(np.float32) / 255.0
