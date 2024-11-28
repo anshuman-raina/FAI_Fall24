@@ -1,7 +1,7 @@
 from tensorflow.keras import layers, Input
 import tensorflow as tf
 
-def build_rcnn_model(input_shape=(640, 640, 3)):
+def build_rcnn_model(input_shape=(640, 640, 1)):
     # Input layer
     input_tensor = Input(shape=input_shape)
     

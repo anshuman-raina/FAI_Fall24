@@ -31,7 +31,7 @@ def main():
     # Build and compile model
     tf.keras.backend.clear_session()
 
-    model = build_rcnn_model(input_shape=(640, 640, 3))
+    model = build_rcnn_model(input_shape=(640, 640,1))
 
     model.compile(
         optimizer='adam',
