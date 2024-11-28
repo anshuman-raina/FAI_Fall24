@@ -1,44 +1,14 @@
 import easyocr
 import cv2
 import numpy as np
-import json
 
-def convert_annotations(json_annotations):
+def extract_text_from_annotations(image_path, annotations):
     """
-    Convert JSON annotation format to coordinate tuples.
-    
-    Args:
-        json_annotations (list): List of annotation dictionaries in JSON format
-    Returns:
-        list: List of annotation dictionaries with simplified coordinates
-    """
-    converted_annotations = []
-    
-    for ann in json_annotations:
-        if ann['contentType'] == 'rect':
-            rect = ann['rectMask']
-            # Convert to (x1, y1, x2, y2) format
-            coords = (
-                int(rect['xMin']),
-                int(rect['yMin']),
-                int(rect['xMin'] + rect['width']),
-                int(rect['yMin'] + rect['height'])
-            )
-            
-            converted_annotations.append({
-                'coords': coords,
-                'label': ann['labels']['labelName']
-            })
-    
-    return converted_annotations
-
-def extract_text_from_annotations(image_path, json_annotations):
-    """
-    Extract text from specified JSON annotations.
+    Extract text from specified annotations.
     
     Args:
         image_path (str): Path to the image file
-        json_annotations (list): List of annotation dictionaries in JSON format
+        annotations (list): List of annotation dictionaries with coordinates and labels
     Returns:
         list: List of dictionaries with coordinates and detected text
     """
@@ -49,9 +19,6 @@ def extract_text_from_annotations(image_path, json_annotations):
     image = cv2.imread(image_path)
     if image is None:
         raise ValueError("Could not read the image")
-    
-    # Convert JSON annotations to coordinate format
-    annotations = convert_annotations(json_annotations)
     
     results = []
     
@@ -124,34 +91,13 @@ def display_results(image_path, results):
 
 if __name__ == "__main__":
     # Example usage
-    image_path = "sample2.jpg"  # Replace with your image path
+    image_path = "text.jpg"  # Replace with your image path
     
-    # Load JSON annotations
+    # Define annotations with top-left and bottom-right coordinates
     annotations = [
         {
-            "content": [
-                {"x": 690.8475566305694, "y": 588.2369902462316},
-                {"x": 801.0916003866994, "y": 588.2369902462316},
-                {"x": 801.0916003866994, "y": 692.3563649047987},
-                {"x": 690.8475566305694, "y": 692.3563649047987}
-            ],
-            "rectMask": {
-                "xMin": 690.8475566305694,
-                "yMin": 588.2369902462316,
-                "width": 110.24404375612993,
-                "height": 104.11937465856715
-            },
-            "labels": {
-                "labelName": "unnamed",
-                "labelColor": "red",
-                "labelColorRGB": "255,0,0",
-                "visibility": False
-            },
-            "labelLocation": {
-                "x": 745.9695785086344,
-                "y": 640.2966775755151
-            },
-            "contentType": "rect"
+            'coords': (574,16,994,234),  # (x1, y1, x2, y2)
+            'label': 'unnamed'
         }
         # Add more annotations as needed
     ]
@@ -162,6 +108,7 @@ if __name__ == "__main__":
         
         # Display results
         print("\nDetected Text in Annotations:")
+        print(results)
         for result in results:
             print(f"\nAnnotation {result['annotation_id']} (Label: {result['label']}):")
             print(f"Coordinates: {result['coordinates']}")
