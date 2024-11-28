@@ -66,23 +66,27 @@ class DataGenerator(Sequence):
 
         return X, {'classification_output': y_class, 'bbox_output': y_bbox}
         
-    def preprocess_image(self, image_path, row):
-        # Read image as-is
+    def preprocess_image(self, image_path, row, image_width=640, image_height=640):
+        # Read image 
         image = cv2.imread(image_path)
         if image is None:
             raise ValueError(f"Could not load image at {image_path}")
         
-        # Bounding box calculations
-        x_top_left = row['x_top_left']
-        y_top_left = row['y_top_left']
-        x_bottom_right = row['x_bottom_right']
-        y_bottom_right = row['y_bottom_right']
-
+        # Convert to grayscale
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        # Normalize image (0-1 range)
+        image = image.astype(np.float32) / 255.0
+        
+        # Noise reduction using median blur
+        image = cv2.medianBlur(image, 3)  # 3x3 kernel
+        
+        # Normalize bounding box coordinates
         bbox = [
-            int(x_top_left),
-            int(y_top_left),
-            int(x_bottom_right),
-            int(y_bottom_right)
+            row['x_top_left'] / image_width,
+            row['y_top_left'] / image_height,
+            row['x_bottom_right'] / image_width,
+            row['y_bottom_right'] / image_height
         ]
 
         return image, np.array(bbox)

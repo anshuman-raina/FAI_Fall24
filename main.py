@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 def main():
     try:
         # Load the trained model
-        model = load_model('empty_shelf_detector_rcnn_resnet (1).h5', compile=False)
+        model = load_model('empty_shelf_detector_rcnn_resnet-newest.h5', compile=False)
         logging.info("Model loaded successfully")
 
         # Define dataset directories
@@ -111,11 +111,11 @@ def evaluate_model(model, test_data, image_folder, iou_threshold=0.2):
 
         # Extract predicted bounding box
         pred_bbox = [
-            int(pred_bbox[0, 0]),
-            int(pred_bbox[0, 1]),
-            int(pred_bbox[0, 2]),
-            int(pred_bbox[0, 3]),
-        ]
+        int(pred_bbox[0, 0] * original_width),
+        int(pred_bbox[0, 1] * original_height),
+        int(pred_bbox[0, 2] * original_width),
+        int(pred_bbox[0, 3] * original_height),
+    ]
 
         # Validate bounding box (clamp within image dimensions)
         original_height, original_width = image.shape[:2]
