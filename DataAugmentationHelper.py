@@ -9,7 +9,7 @@ import os
 class DataGenerator(Sequence):
 
     def __init__(self, dataframe, image_folder, batch_size=16, target_size=(640, 640), augment=False, shuffle=False):
-        self.dataframe = dataframe
+        self.dataframe = dataframe[dataframe['label_name'] != 'product'].reset_index(drop=True)
         self.image_folder = image_folder
         self.batch_size = batch_size
         self.target_size = target_size
@@ -28,7 +28,7 @@ class DataGenerator(Sequence):
         start_idx = index * self.batch_size
         end_idx = min(start_idx + self.batch_size, len(self.dataframe))
         batch_indices = self.indices[start_idx:end_idx]
-        
+
         X, y = self.__data_generation(batch_indices)
         
         return X, y
@@ -40,7 +40,7 @@ class DataGenerator(Sequence):
     
     def __data_generation(self, batch_indices, draw_bboxes=True, output_folder="annotated_images"):
         batch_size = len(batch_indices)
-        X = np.zeros((batch_size, *self.target_size, 3), dtype=np.float32)
+        X = np.zeros((batch_size, *self.target_size, 1), dtype=np.float32)
         y_class = np.zeros((batch_size,), dtype=np.int32)  # Integer labels for classification
         y_bbox = np.zeros((batch_size, 4), dtype=np.float32)  # Bounding box coordinates
 
@@ -54,7 +54,7 @@ class DataGenerator(Sequence):
             image, bbox = self.preprocess_image(image_path, row)
             X[i] = image
 
-            label_map = {'empty-shelf': 0, 'product': 1, }
+            label_map = {'empty-shelf': 1}
             y_class[i] = label_map[row['label_name']]  # Map label name to integer
 
             y_bbox[i] = bbox
@@ -95,6 +95,7 @@ class DataGenerator(Sequence):
             row['x_bottom_right'] / image_width,
             row['y_bottom_right'] / image_height
         ]
+        image = np.expand_dims(image, axis=-1)
 
         return image, np.array(bbox)
 
@@ -215,3 +216,109 @@ class DataGenerator(Sequence):
 #     sheared_bbox = [x_min_shear, y_min_shear, x_max_shear, y_max_shear]
 #
 #     return sheared_image, sheared_bbox
+
+import numpy as np
+import os
+import cv2
+import pandas as pd
+
+
+class DataGeneratorNew:
+    def __init__(self, dataframe, image_folder, target_size=(640, 640), augment=False, shuffle=False):
+        self.dataframe = dataframe[dataframe['label_name'] != 'product'].reset_index(drop=True)
+        self.image_folder = image_folder
+        self.target_size = target_size
+        self.augment = augment
+        self.shuffle = shuffle
+
+        if self.augment:
+            self.dataframe = self.augment_dataset()
+
+        if self.shuffle:
+            self.dataframe = self.dataframe.sample(frac=1).reset_index(drop=True)
+
+    def generate_data(self, draw_bboxes=True, output_folder="annotated_images"):
+        dataset_size = len(self.dataframe)
+        X = np.zeros((dataset_size, *self.target_size, 3), dtype=np.float32)
+        y_class = np.zeros((dataset_size,), dtype=np.int32)  # Integer labels for classification
+        y_bbox = np.zeros((dataset_size, 4), dtype=np.float32)  # Bounding box coordinates
+
+        if draw_bboxes:
+            os.makedirs(output_folder, exist_ok=True)
+
+        for i, idx in enumerate(range(dataset_size)):
+            row = self.dataframe.iloc[idx]
+            image_path = os.path.join(self.image_folder, row['image_name'])
+
+            image, bbox = self.preprocess_image(image_path, row)
+            X[i] = image
+
+            label_map = {'empty-shelf': 1}
+            y_class[i] = label_map[row['label_name']]  # Map label name to integer
+
+            y_bbox[i] = bbox
+
+            if draw_bboxes:
+                annotated_image = self.draw_bounding_box(image, bbox, row['label_name'])
+                output_path = os.path.join(output_folder, f"annotated_{os.path.basename(image_path)}")
+                cv2.imwrite(output_path, annotated_image)
+
+        return X, {'classification_output': y_class, 'bbox_output': y_bbox}
+
+    def preprocess_image(self, image_path, row):
+        # Read image as-is
+        image = cv2.imread(image_path)
+        if image is None:
+            raise ValueError(f"Could not load image at {image_path}")
+
+        # Bounding box calculations
+        x_top_left = row['x_top_left']
+        y_top_left = row['y_top_left']
+        x_bottom_right = row['x_bottom_right']
+        y_bottom_right = row['y_bottom_right']
+
+        bbox = [
+            int(x_top_left),
+            int(y_top_left),
+            int(x_bottom_right),
+            int(y_bottom_right)
+        ]
+
+        return image, np.array(bbox)
+
+    def draw_bounding_box(self, image, bbox, label_name):
+        """
+        Draw a bounding box with a label on an image.
+
+        Parameters:
+            image (np.ndarray): The image on which to draw.
+            bbox (np.ndarray): Bounding box in [x_min, y_min, x_max, y_max] format.
+            label_name (str): Label for the bounding box.
+
+        Returns:
+            annotated_image (np.ndarray): The image with the bounding box and label drawn.
+        """
+        annotated_image = image.copy()
+        x_top_left, y_top_left, x_bottom_right, y_bottom_right = map(int, bbox)
+
+        # Determine box and text color
+        if label_name.strip() == "empty-shelf":
+            box_color = (0, 255, 255)  # Yellow for empty-shelf
+            text_color = (0, 255, 255)
+        else:
+            box_color = (0, 0, 255)  # Red for product
+            text_color = (0, 0, 255)
+
+        # Draw rectangle and add text
+        cv2.rectangle(annotated_image, (x_top_left, y_top_left), (x_bottom_right, y_bottom_right), box_color, 2)
+        cv2.putText(
+            annotated_image,
+            label_name,
+            (x_top_left, y_top_left - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            text_color,
+            1
+        )
+
+        return annotated_image
