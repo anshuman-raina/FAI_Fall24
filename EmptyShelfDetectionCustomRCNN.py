@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 from tensorflow.keras.models import load_model
 from DataAugmentationHelper import DataGenerator
-from RCNNModel import build_rcnn_model
+from RCNNModel import build_rcnn_model_with_residuals
 
 from converter import parse_yolov5_obb
 
@@ -31,7 +31,7 @@ def main():
     # Build and compile model
     tf.keras.backend.clear_session()
 
-    model = build_rcnn_model(input_shape=(640, 640,1))
+    model = build_rcnn_model_with_residuals(input_shape=(640, 640,1))
 
     model.compile(
         optimizer='adam',

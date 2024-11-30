@@ -19,8 +19,8 @@ def main():
 
         # Define dataset directories
         datasets = {
-        'test': ('../test/labelTxt', '../test/images'),
-        'valid': ('../valid/labelTxt', '../valid/images'),
+        'test': ('drive/MyDrive/Dataset/EMPTY SHELF FINAL/EMPTY SHELF FINAL/test/labelTxt', 'drive/MyDrive/Dataset/EMPTY SHELF FINAL/EMPTY SHELF FINAL/test/images'),
+        'valid': ('drive/MyDrive/Dataset/EMPTY SHELF FINAL/EMPTY SHELF FINAL/valid/labelTxt', 'drive/MyDrive/Dataset/EMPTY SHELF FINAL/EMPTY SHELF FINAL/valid/images'),
             }
 
         # Evaluate on datasets
@@ -312,6 +312,7 @@ def evaluate_model(model, test_data, image_folder, iou_threshold=0.2):
     classification_accuracy = correct_classifications / total_samples
     bbox_accuracy = correct_bboxes / total_samples
 
+    compute_and_visualize_metrics(tp, fp, tn, fn, iou_list)
     # Output the results
     logging.info(f"Classification Accuracy: {classification_accuracy:.2f}")
     logging.info(f"BBox Accuracy (IoU ≥ {iou_threshold}): {bbox_accuracy:.2f}")
