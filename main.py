@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 def main():
     try:
         # Load the trained model
-        model = load_model('empty_shelf_detector_rcnn_resnet_full_bw.h5', compile=False)
+        model = load_model('empty_shelf_detector_rcnn_resnet-residuals.h5', compile=False)
         logging.info("Model loaded successfully")
 
         # Define dataset directories
@@ -205,8 +205,9 @@ def evaluate_model(model, test_data, image_folder, iou_threshold=0.2):
         # Create a copy of the image for drawing
         draw_image = image.copy()
         model_input = np.expand_dims(preprocessed_image, axis=(0, -1))
+        
         # Predict bounding box and label
-        pred_bbox, pred_label_probs = model.predict(np.expand_dims(model_input, axis=0))
+        pred_bbox, pred_label_probs = model.predict(model_input)
         pred_label = np.argmax(pred_label_probs[0])
         original_height, original_width = image.shape[:2]
         # Extract predicted bounding box
@@ -250,7 +251,7 @@ def evaluate_model(model, test_data, image_folder, iou_threshold=0.2):
 
         # Determine label colors and text
         true_color = (0, 255, 0) if true_label == 0 else (0, 0, 255)  # Green for empty, Red for not empty
-        pred_color = (0, 255, 0) if pred_label == 0 else (0, 0, 255)  # Green for empty, Red for not empty
+        pred_color = (0, 255, 0) if pred_label == 0 else (255, 0, 0)  # Green for empty, Red for not empty
         
         true_label_text = "Empty" if true_label == 0 else "Not Empty"
         pred_label_text = "Empty" if pred_label == 0 else "Not Empty"

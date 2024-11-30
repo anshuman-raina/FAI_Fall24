@@ -40,7 +40,7 @@ class DataGenerator(Sequence):
     
     def __data_generation(self, batch_indices, draw_bboxes=True, output_folder="annotated_images"):
         batch_size = len(batch_indices)
-        X = np.zeros((batch_size, *self.target_size, 3), dtype=np.float32)
+        X = np.zeros((batch_size, *self.target_size, 1), dtype=np.float32)
         y_class = np.zeros((batch_size,), dtype=np.int32)  # Integer labels for classification
         y_bbox = np.zeros((batch_size, 4), dtype=np.float32)  # Bounding box coordinates
 
@@ -81,7 +81,7 @@ class DataGenerator(Sequence):
         # Apply CLAHE
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
         image = clahe.apply(image)
-        
+
         # Normalize image (0-1 range)
         image = image.astype(np.float32) / 255.0
         
