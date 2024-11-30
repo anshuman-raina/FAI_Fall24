@@ -14,13 +14,13 @@ logging.basicConfig(level=logging.INFO)
 def main():
     try:
         # Load the trained model
-        model = load_model('empty_shelf_detector_rcnn_resnet-residuals.h5', compile=False)
+        model = load_model('empty_shelf_detector_rcnn_resnet-product_only.h5', compile=False)
         logging.info("Model loaded successfully")
 
         # Define dataset directories
         datasets = {
-        'test': ('drive/MyDrive/Dataset/EMPTY SHELF FINAL/EMPTY SHELF FINAL/test/labelTxt', 'drive/MyDrive/Dataset/EMPTY SHELF FINAL/EMPTY SHELF FINAL/test/images'),
-        'valid': ('drive/MyDrive/Dataset/EMPTY SHELF FINAL/EMPTY SHELF FINAL/valid/labelTxt', 'drive/MyDrive/Dataset/EMPTY SHELF FINAL/EMPTY SHELF FINAL/valid/images'),
+        'test': ('EMPTY SHELF FINAL/EMPTY SHELF FINAL/test/labelTxt', 'EMPTY SHELF FINAL/EMPTY SHELF FINAL/test/images'),
+        'valid': ('EMPTY SHELF FINAL/EMPTY SHELF FINAL/valid/labelTxt', 'EMPTY SHELF FINAL/EMPTY SHELF FINAL/valid/images'),
             }
 
         # Evaluate on datasets
@@ -41,38 +41,7 @@ def main():
     except Exception as e:
         logging.error(f"An error occurred: {str(e)}")
 
-def compute_and_visualize_metrics(tp, fp, tn, fn, iou_scores, iou_threshold=0.2):
-
-    print("true positives", tp)
-    print("false positives", fp)
-    print("true negatives", tn)
-    print("false negatives", fn)
-    # Compute Metrics
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-    fdr = fp / (tp + fp) if (tp + fp) > 0 else 0
-    tnr = tn / (tn + fp) if (tn + fp) > 0 else 0
-    fnr = fn / (tp + fn) if (tp + fn) > 0 else 0
-    f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
-    overall_accuracy = (tp + tn) / (tp + tn + fp + fn)
-
-    # Print Metrics
-    print("\nEvaluation Metrics:")
-    print(f"Precision: {precision:.2f}")
-    print(f"Recall: {recall:.2f}")
-    print(f"False Discovery Rate (FDR): {fdr:.2f}")
-    print(f"True Negative Rate (TNR): {tnr:.2f}")
-    print(f"False Negative Rate (FNR): {fnr:.2f}")
-    print(f"F1 Score: {f1_score:.2f}")
-    print(f"Overall Accuracy: {overall_accuracy:.2f}")
-
-    # Plot Confusion Matrix
-    cm = np.array([[tp, fn], [fp, tn]])
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Empty", "Not Empty"])
-    disp.plot(cmap="viridis")
-    plt.title("Confusion Matrix")
-    plt.show()
-
+def compute_and_visualize_metrics(iou_scores, iou_threshold=0.2):
     # Plot IoU Distribution
     plt.figure()
     plt.hist(iou_scores, bins=20, range=(0, 1), alpha=0.75)
@@ -81,41 +50,6 @@ def compute_and_visualize_metrics(tp, fp, tn, fn, iou_scores, iou_threshold=0.2)
     plt.ylabel("Frequency")
     plt.axvline(x=iou_threshold, color='red', linestyle='--', label=f'Threshold={iou_threshold}')
     plt.legend()
-    plt.show()
-
-    # Plot Precision-Recall Curve
-    y_true = [1 if score >= iou_threshold else 0 for score in iou_scores]
-    y_probs = iou_scores  # Using IoU scores as prediction probabilities
-    precision_curve, recall_curve, _ = precision_recall_curve(y_true, y_probs)
-    plt.figure()
-    plt.plot(recall_curve, precision_curve, marker='.')
-    plt.title("Precision-Recall Curve")
-    plt.xlabel("Recall")
-    plt.ylabel("Precision")
-    plt.show()
-
-    # Plot F1 Score as IoU Threshold Changes
-    thresholds = np.linspace(0, 1, 50)
-    f1_scores = [
-        2 * (tp / len(iou_scores)) * (recall / len(iou_scores)) / (
-                (tp / len(iou_scores)) + (recall / len(iou_scores)))
-        if (tp / len(iou_scores)) + (recall / len(iou_scores)) > 0 else 0
-        for threshold in thresholds
-    ]
-    plt.figure()
-    plt.plot(thresholds, f1_scores, marker='.')
-    plt.title("F1 Score vs IoU Threshold")
-    plt.xlabel("IoU Threshold")
-    plt.ylabel("F1 Score")
-    plt.show()
-
-    # Plot Per-Class Accuracy
-    per_class_accuracy = [tp / (tp + fn), tn / (tn + fp)]
-    classes = ["Empty", "Not Empty"]
-    plt.figure()
-    plt.bar(classes, per_class_accuracy)
-    plt.title("Per-Class Accuracy")
-    plt.ylabel("Accuracy")
     plt.show()
 
 def calculate_iou(true_bbox, pred_bbox):
@@ -156,11 +90,6 @@ def evaluate_model(model, test_data, image_folder, iou_threshold=0.2):
     correct_classifications = 0
     correct_bboxes = 0
 
-    tp = 0  # True Positives
-    fp = 0  # False Positives
-    tn = 0  # True Negatives
-    fn = 0  # False Negatives
-
     iou_list = []
 
     # Add a counter for tracking progress
@@ -169,6 +98,10 @@ def evaluate_model(model, test_data, image_folder, iou_threshold=0.2):
     # Create a results directory if it doesn't exist
     results_dir = os.path.join(image_folder, 'evaluation_results')
     os.makedirs(results_dir, exist_ok=True)
+
+    center_deviation_list = []
+    overlap_ratio_list = []
+    coverage_list = []
 
     for idx, row in test_data.iterrows():
         # Construct full image path
@@ -230,17 +163,6 @@ def evaluate_model(model, test_data, image_folder, iou_threshold=0.2):
         # Classification Accuracy
         if pred_label == true_label:
             correct_classifications += 1
-
-        if true_label == 1:  # Shelf is empty
-            if pred_label == 1:
-                tp += 1
-            else:
-                fn += 1
-        else:  # Shelf is not empty
-            if pred_label == 1:
-                fp += 1
-            else:
-                tn += 1
 
         # IoU for Bounding Box
         iou = calculate_iou(true_bbox, pred_bbox)
@@ -308,15 +230,65 @@ def evaluate_model(model, test_data, image_folder, iou_threshold=0.2):
         if processed_count % 10 == 0 or processed_count == total_samples:
             logging.info(f"Processed {processed_count}/{total_samples} images in directory: {image_folder}...")
 
+        metrics = calculate_metrics(true_bbox, pred_bbox)
+        center_deviation_list.append(metrics["center_deviation"])
+        overlap_ratio_list.append(metrics["overlap_ratio"])
+        coverage_list.append(metrics["coverage"])
+
     # Compute metrics
     classification_accuracy = correct_classifications / total_samples
     bbox_accuracy = correct_bboxes / total_samples
 
-    compute_and_visualize_metrics(tp, fp, tn, fn, iou_list)
+    compute_and_visualize_metrics(iou_list)
     # Output the results
-    logging.info(f"Classification Accuracy: {classification_accuracy:.2f}")
-    logging.info(f"BBox Accuracy (IoU ≥ {iou_threshold}): {bbox_accuracy:.2f}")
-    logging.info(f"Evaluation images saved in: {results_dir}")
+    logging.info(f"Average Center Deviation: {np.mean(center_deviation_list):.2f}")
+    logging.info(f"Average Overlap Ratio (IoU): {np.mean(overlap_ratio_list):.2f}")
+    logging.info(f"Average Coverage: {np.mean(coverage_list):.2f}")
+
+def calculate_metrics(true_bbox, pred_bbox):
+    """
+    Calculate Center Deviation, Overlap Ratio (IoU), and Coverage metrics for given bounding boxes.
+
+    Parameters:
+        true_bbox: List or array [x_top_left, y_top_left, x_bottom_right, y_bottom_right] for the true bounding box.
+        pred_bbox: List or array [x_top_left, y_top_left, x_bottom_right, y_bottom_right] for the predicted bounding box.
+
+    Returns:
+        metrics: Dictionary containing center deviation, overlap ratio (IoU), and coverage metrics.
+    """
+    # Calculate centers
+    true_center = [(true_bbox[0] + true_bbox[2]) / 2, (true_bbox[1] + true_bbox[3]) / 2]
+    pred_center = [(pred_bbox[0] + pred_bbox[2]) / 2, (pred_bbox[1] + pred_bbox[3]) / 2]
+
+    # Compute Center Deviation (Euclidean distance)
+    center_deviation = np.sqrt((true_center[0] - pred_center[0])**2 + (true_center[1] - pred_center[1])**2)
+
+    # Calculate intersection
+    x1 = max(true_bbox[0], pred_bbox[0])
+    y1 = max(true_bbox[1], pred_bbox[1])
+    x2 = min(true_bbox[2], pred_bbox[2])
+    y2 = min(true_bbox[3], pred_bbox[3])
+    intersection_area = max(0, x2 - x1) * max(0, y2 - y1)
+
+    # Calculate areas
+    true_area = (true_bbox[2] - true_bbox[0]) * (true_bbox[3] - true_bbox[1])
+    pred_area = (pred_bbox[2] - pred_bbox[0]) * (pred_bbox[3] - pred_bbox[1])
+
+    # Compute Overlap Ratio (IoU)
+    union_area = true_area + pred_area - intersection_area
+    overlap_ratio = intersection_area / union_area if union_area > 0 else 0
+
+    # Compute Coverage
+    coverage = intersection_area / true_area if true_area > 0 else 0
+
+    # Return metrics
+    metrics = {
+        "center_deviation": center_deviation,
+        "overlap_ratio": overlap_ratio,
+        "coverage": coverage
+    }
+    return metrics
+
 
 
 if __name__ == "__main__":
