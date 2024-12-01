@@ -139,7 +139,7 @@ def display_results(image, coordinates, detected_text, output_path, label=None, 
         
         # Ensure output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        #cv2.imwrite(output_path, image)
+        cv2.imwrite(output_path, image)
         logger.info(f"Annotated image saved at: {output_path}")
         
         return image
@@ -193,8 +193,8 @@ def process_image(empty_shelf_model_path, product_model_path, image_path, output
 
 # Example Usage
 if __name__ == "__main__":
-    empty_shelf_model_path = "empty_shelf_detector_rcnn_resnet-residuals.h5"
+    empty_shelf_model_path = "empty_shelf_detector_rcnn_resnet-residuals-empty-shelf.h5"
     product_model_path = "empty_shelf_detector_rcnn_resnet-product_only.h5"
-    image_path = "text2.jpg"
-    output_dir = "../"
+    image_path = "1.jpg"
+    output_dir = "annotated_images"
     process_image(empty_shelf_model_path, product_model_path, image_path, output_dir)
