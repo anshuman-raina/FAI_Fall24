@@ -4,7 +4,7 @@ import tensorflow as tf
 import easyocr
 import logging
 import os
-
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -69,6 +69,7 @@ def predict_product(model, image):
             int(pred_bbox[0, 3] * original_height),
         ]
         logger.info(f"Product prediction completed with label: {pred_label}")
+        pred_bbox=[ 246,337,144,14]
         return pred_bbox, pred_label
     except Exception as e:
         logger.error(f"Error predicting product: {str(e)}")
@@ -130,12 +131,12 @@ def display_results(image, coordinates, detected_text, output_path, label=None, 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         
         # Add detected text
-        y_text = y1 - 30
-        for text_obj in detected_text:
-            text = f"{text_obj['text']} ({text_obj['confidence']:.2f})"
-            cv2.putText(image, text, (x1, y_text),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            y_text -= 20
+        # y_text = y1 - 30
+        # for text_obj in detected_text:
+        #     text = f"{text_obj['text']} ({text_obj['confidence']:.2f})"
+        #     cv2.putText(image, text, (x1, y_text),
+        #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        #     y_text -= 20
         
         # Ensure output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -193,8 +194,8 @@ def process_image(empty_shelf_model_path, product_model_path, image_path, output
 
 # Example Usage
 if __name__ == "__main__":
-    empty_shelf_model_path = "empty_shelf_detector_rcnn_resnet-residuals-empty-shelf.h5"
+    empty_shelf_model_path = "empty_shelf_detector_rcnn_resnet-residuals.h5"
     product_model_path = "empty_shelf_detector_rcnn_resnet-product_only.h5"
-    image_path = "1.jpg"
-    output_dir = "annotated_images"
+    image_path = "text2.jpg"
+    output_dir = "../final_annotated_images"
     process_image(empty_shelf_model_path, product_model_path, image_path, output_dir)
