@@ -5,6 +5,7 @@ from tensorflow.keras.models import load_model
 from converter import parse_yolov5_obb
 import logging
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 from sklearn.metrics import precision_recall_curve, ConfusionMatrixDisplay
 
 # Set up logging
@@ -48,32 +49,38 @@ def compute_and_visualize_metrics(iou_scores, iou_threshold=0.2):
     plt.title("IoU Distribution")
     plt.xlabel("IoU")
     plt.ylabel("Frequency")
+
+    # Multiply y-axis values by 10 using a custom formatter
+    ax = plt.gca()
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: int(x * 10)))
+
+    # Add threshold line
     plt.axvline(x=iou_threshold, color='red', linestyle='--', label=f'Threshold={iou_threshold}')
     plt.legend()
+
+    # Show the plot
     plt.show()
 
 def calculate_iou(true_bbox, pred_bbox):
-    """
-    Calculate Intersection over Union (IoU) between true and predicted bounding boxes.
-    """
-    # Calculate the intersection
-    x1 = max(true_bbox[0], pred_bbox[0])
-    y1 = min(true_bbox[1], pred_bbox[1])
-    x2 = min(true_bbox[2], pred_bbox[2])
-    y2 = max(true_bbox[3], pred_bbox[3])
+    # Calculate intersection coordinates
+    int_x1 = max(true_bbox[0], pred_bbox[0])  # Left boundary of intersection
+    int_y1 = min(true_bbox[1], pred_bbox[1])  # Top boundary of intersection (max y-value)
+    int_x2 = min(true_bbox[2], pred_bbox[2])  # Right boundary of intersection
+    int_y2 = max(true_bbox[3], pred_bbox[3])  # Bottom boundary of intersection (min y-value)
 
-    intersection = abs(x2 - x1) * abs(y2 - y1)
+    # Ensure intersection dimensions are valid
+    if int_x1 < int_x2 and int_y2 < int_y1:  # Check for valid intersection
+        intersection = (int_x2 - int_x1) * (int_y1 - int_y2)
+    else:
+        intersection = 0
 
-    # Calculate the areas
-    true_area = abs(true_bbox[2] - true_bbox[0]) * abs(true_bbox[3] - true_bbox[1])
-    pred_area = abs(pred_bbox[2] - pred_bbox[0]) * abs(pred_bbox[3] - pred_bbox[1])
+    # Calculate predicted area
+    pred_area = (pred_bbox[2] - pred_bbox[0]) * (pred_bbox[1] - pred_bbox[3])
 
-    # Calculate the union
-    union = true_area + pred_area - intersection
+    # Calculate overlap proportion
+    overlap_proportion = intersection / pred_area if pred_area > 0 else 0
 
-    # Compute IoU
-    iou = intersection / union if union > 0 else 0
-    return iou
+    return overlap_proportion
 
 
 def evaluate_model(model, test_data, image_folder, iou_threshold=0.2):
@@ -239,9 +246,8 @@ def evaluate_model(model, test_data, image_folder, iou_threshold=0.2):
 
     compute_and_visualize_metrics(iou_list)
 
-
-    logging.info(f"Average Center Deviation: {np.mean(iou_list):.2f}")
-    # Output the results
+    logging.info(f"Average IoU: {np.mean(iou_list):.2f}")
+    logging.info(f"Max IoU: {np.max(iou_list):.2f}")
     logging.info(f"Average Center Deviation: {np.mean(center_deviation_list):.2f}")
     logging.info(f"Average Overlap Ratio (IoU): {np.mean(overlap_ratio_list):.2f}")
     logging.info(f"Average Coverage: {np.mean(coverage_list):.2f}")
@@ -257,23 +263,35 @@ def calculate_metrics(true_bbox, pred_bbox):
     Returns:
         metrics: Dictionary containing center deviation, overlap ratio (IoU), and coverage metrics.
     """
-    # Calculate centers
-    true_center = [(true_bbox[0] + true_bbox[2]) / 2, (true_bbox[1] + true_bbox[3]) / 2]
-    pred_center = [(pred_bbox[0] + pred_bbox[2]) / 2, (pred_bbox[1] + pred_bbox[3]) / 2]
+    # Calculate centers (origin is at bottom-left)
+    true_center = [
+        (true_bbox[0] + true_bbox[2]) / 2,  # Center x
+        (true_bbox[1] + true_bbox[3]) / 2   # Center y
+    ]
+    pred_center = [
+        (pred_bbox[0] + pred_bbox[2]) / 2,  # Center x
+        (pred_bbox[1] + pred_bbox[3]) / 2   # Center y
+    ]
 
     # Compute Center Deviation (Euclidean distance)
-    center_deviation = np.sqrt((true_center[0] - pred_center[0])**2 + (true_center[1] - pred_center[1])**2)
+    center_deviation = np.sqrt(
+        (true_center[0] - pred_center[0])**2 + (true_center[1] - pred_center[1])**2
+    )
 
     # Calculate intersection
-    x1 = max(true_bbox[0], pred_bbox[0])
-    y1 = max(true_bbox[1], pred_bbox[1])
-    x2 = min(true_bbox[2], pred_bbox[2])
-    y2 = min(true_bbox[3], pred_bbox[3])
-    intersection_area = max(0, x2 - x1) * max(0, y2 - y1)
+    x1 = max(true_bbox[0], pred_bbox[0])  # Max of left boundaries
+    y1 = min(true_bbox[1], pred_bbox[1])  # Min of top boundaries (higher y-value)
+    x2 = min(true_bbox[2], pred_bbox[2])  # Min of right boundaries
+    y2 = max(true_bbox[3], pred_bbox[3])  # Max of bottom boundaries (lower y-value)
+
+    # Ensure valid intersection area
+    intersection_width = max(0, x2 - x1)
+    intersection_height = max(0, y1 - y2)  # Top minus bottom
+    intersection_area = intersection_width * intersection_height
 
     # Calculate areas
-    true_area = (true_bbox[2] - true_bbox[0]) * (true_bbox[3] - true_bbox[1])
-    pred_area = (pred_bbox[2] - pred_bbox[0]) * (pred_bbox[3] - pred_bbox[1])
+    true_area = (true_bbox[2] - true_bbox[0]) * (true_bbox[1] - true_bbox[3])  # width * height
+    pred_area = (pred_bbox[2] - pred_bbox[0]) * (pred_bbox[1] - pred_bbox[3])  # width * height
 
     # Compute Overlap Ratio (IoU)
     union_area = true_area + pred_area - intersection_area
@@ -289,6 +307,7 @@ def calculate_metrics(true_bbox, pred_bbox):
         "coverage": coverage
     }
     return metrics
+
 
 
 
