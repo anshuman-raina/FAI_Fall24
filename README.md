@@ -91,13 +91,19 @@ python .\product_recommender.py
 
 ```text
 .
-├── data/
-│   ├── train/
-│   ├── test/
-│   └── val/
-├── models/
-├── utils/
-└── notebooks/
+├───Data
+│   ├───test
+│   ├───train
+│   └───valid
+├───Models
+├───Notebooks
+├───Report and Slides
+├───Results
+│   ├───evaluation_results
+│   ├───Final_Output
+│   └───Preprocessing Images
+├───Scripts
+└───Utils
 ```
 
 ## Performance Metrics
