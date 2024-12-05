@@ -3,7 +3,7 @@ Project on Empty Shelf Detection and product recommendation
 
 
 
-link to the dataset: https://northeastern-my.sharepoint.com/:f:/r/personal/aher_ar_northeastern_edu/Documents/images?csf=1&web=1&e=baLwM0
+
 # Empty Shelf Detection and Product Recommendation
 
 ## Project Description
@@ -24,7 +24,8 @@ The dataset comprises retail shelf imagery from multiple sources:
 - **Sources**: Stop & Shop, Target, 7-Eleven
 - **Split ratio**: 80% training, 10% testing, 10% validation
 - **Classes**: `empty-shelf` and `product`
-
+-  Link to the dataset: https://northeastern-my.sharepoint.com/:f:/r/personal/aher_ar_northeastern_edu/Documents/images?csf=1&web=1&e=baLwM0
+-  
 ## Implementation Steps
 
 ### Data Processing Pipeline
@@ -40,21 +41,18 @@ The dataset comprises retail shelf imagery from multiple sources:
 # Clone repository
 git clone [your-repo-url]
 cd empty-shelf-detection
+```
 
 # Install dependencies
+```
 pip install -r requirements.txt
+```
+
 ## Usage Example
 
 ```python
-# Import detector
-from shelf_detector import ShelfDetector
-
-# Initialize model
-detector = ShelfDetector()
-
-# Run detection
-results = detector.detect('shelf_image.jpg')
-
+python .\product_recommender.py
+```
 
 ## Project Structure
 
@@ -67,7 +65,7 @@ results = detector.detect('shelf_image.jpg')
 ├── models/
 ├── utils/
 └── notebooks/
-
+```
 
 ## Team
 - Nikhil Satish Kulkarni
