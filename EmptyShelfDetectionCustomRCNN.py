@@ -1,6 +1,7 @@
 import pandas as pd
 import argparse
 import tensorflow as tf
+import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 from tensorflow.keras.models import load_model
@@ -8,6 +9,76 @@ from DataAugmentationHelper import DataGenerator
 from RCNNModel import build_rcnn_model_with_residuals
 
 from converter import parse_yolov5_obb
+
+def plot_training_metrics(history, output_dir='plots'):
+    """Plots and saves training metrics from the history object."""
+    import os
+
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Extract metrics from history
+    metrics = history.history
+
+    # Plot and save Classification Accuracy
+    if 'classification_output_accuracy' in metrics:
+        plt.figure(figsize=(8, 6))
+        plt.plot(metrics['classification_output_accuracy'], label='Classification Accuracy')
+        plt.title('Classification Accuracy Over Epochs')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(output_dir, 'classification_accuracy.png'))
+        plt.show()
+
+    # Plot and save Classification Loss
+    if 'classification_output_loss' in metrics:
+        plt.figure(figsize=(8, 6))
+        plt.plot(metrics['classification_output_loss'], label='Classification Loss')
+        plt.title('Classification Loss Over Epochs')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(output_dir, 'classification_loss.png'))
+        plt.show()
+
+    # Plot and save Bounding Box MSE
+    if 'bbox_output_mse' in metrics:
+        plt.figure(figsize=(8, 6))
+        plt.plot(metrics['bbox_output_mse'], label='Bounding Box MSE')
+        plt.title('Bounding Box Mean Squared Error (MSE) Over Epochs')
+        plt.xlabel('Epoch')
+        plt.ylabel('MSE')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(output_dir, 'bbox_mse.png'))
+        plt.show()
+
+    # Plot and save Bounding Box MAE
+    if 'bbox_output_mae' in metrics:
+        plt.figure(figsize=(8, 6))
+        plt.plot(metrics['bbox_output_mae'], label='Bounding Box MAE')
+        plt.title('Bounding Box Mean Absolute Error (MAE) Over Epochs')
+        plt.xlabel('Epoch')
+        plt.ylabel('MAE')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(output_dir, 'bbox_mae.png'))
+        plt.show()
+
+    # Plot and save Total Loss
+    if 'loss' in metrics:
+        plt.figure(figsize=(8, 6))
+        plt.plot(metrics['loss'], label='Total Loss')
+        plt.title('Total Loss Over Epochs')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(output_dir, 'total_loss.png'))
+        plt.show()
 
 def main():
     parser = argparse.ArgumentParser(description='Empty Shelf Detection Training')
@@ -49,11 +120,14 @@ def main():
         },
     )
 
-    model.fit(
+    history = model.fit(
         train_generator,
         epochs=args.epochs,
         steps_per_epoch=len(train_generator),
     )
+
+    # Plot training metrics and save the plots
+    plot_training_metrics(history, output_dir='training_plots')
     
     # Save model
     model.save('empty_shelf_detector_rcnn_resnet.h5')
