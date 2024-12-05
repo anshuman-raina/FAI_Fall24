@@ -37,7 +37,7 @@ def parse_yolov5_obb(annotations_dir, image_folder):
 
                     # Extract label
                     label_name = parts[8]
-                    label_map = {"empty-shelf": 0, "product": 1}  # Map labels to integers
+                    label_map = {"empty-shelf": 0, "product": 1}
                     label = label_map.get(label_name, 0)
 
                 except ValueError:
