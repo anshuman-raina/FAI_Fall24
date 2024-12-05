@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import logging
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -101,19 +102,41 @@ def extract_text(image_path, coordinates):
         return []
 
 def display_results(image_path, coordinates, detected_text):
+    output_dir = "../result_recommend"
+    
     logger.info("Displaying results")
+    
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Load the image
     image = cv2.imread(image_path)
+    if image is None:
+        logger.error(f"Failed to load image at: {image_path}")
+        return
+    
+    # Draw rectangle around detected object
     x1, y1, x2, y2 = coordinates
-    cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+    
+    # Add detected text with confidence
     y_text = y1 - 10
     for text_obj in detected_text:
         text = f"{text_obj['text']} ({text_obj['confidence']:.2f})"
         cv2.putText(image, text, (x1, y_text),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         y_text -= 20
-    output_path = "annotated_" + image_path.split('/')[-1]
-    cv2.imwrite(output_path, image)
-    logger.info(f"Annotated image saved as: {output_path}")
+    
+    # Construct output path
+    image_name = os.path.basename(image_path)  # Extract filename
+    output_path = os.path.join(output_dir, f"annotated_{image_name}")
+    
+    # Save the annotated image
+    success = cv2.imwrite(output_path, image)
+    if success:
+        logger.info(f"Annotated image saved at: {output_path}")
+    else:
+        logger.error(f"Failed to save annotated image at: {output_path}")
 
 def main(model_path, image_path):
     try:
@@ -139,7 +162,17 @@ def main(model_path, image_path):
         import traceback
         logger.error(traceback.format_exc())
 
+
+
 if __name__ == "__main__":
     model_path = "Product_detector_rcnn_resnet_full_product.h5"
-    image_path = "text2.jpg"
-    main(model_path, image_path)
+    folder_path = "../evaluation_results_picked"  
+    # Iterate over all files in the folder
+    for image_name in os.listdir(folder_path):
+        image_path = os.path.join(folder_path, image_name)
+        if os.path.isfile(image_path):  # Ensure it's a file
+            try:
+                print(f"Processing image: {image_name}")
+                main(model_path, image_path)
+            except Exception as e:
+                print(f"Error processing {image_name}: {e}")

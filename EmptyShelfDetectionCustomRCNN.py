@@ -120,14 +120,11 @@ def main():
         },
     )
 
-    history = model.fit(
+    model.fit(
         train_generator,
         epochs=args.epochs,
         steps_per_epoch=len(train_generator),
     )
-
-    # Plot training metrics and save the plots
-    plot_training_metrics(history, output_dir='training_plots')
     
     # Save model
     model.save('empty_shelf_detector_rcnn_resnet.h5')
@@ -181,5 +178,28 @@ def predict_on_image(image_path, model, label_map={0: 'empty-shelf', 1: 'product
     
     return image
 
-if __name__ == "__main__":
+
+
+    # Map class index to label
+    label_map = {0: 'empty-shelf', 1: 'product'}
+    label_name = label_map[class_index]
+
+    # Denormalize bbox predictions (assuming they're in [0, 1] range)
+    x_top_left = bbox_pred[0, 0]
+    y_top_left = bbox_pred[0, 1]
+    x_bottom_right = bbox_pred[0, 2]
+    y_bottom_right = bbox_pred[0, 3]
+
+    # Draw predictions only if box coordinates make sense
+    if x_top_left < x_bottom_right and y_bottom_right < y_top_left:
+        cv2.rectangle(image, (x_top_left, y_top_left), (x_bottom_right, y_bottom_right), (0, 255, 0), 2)
+        cv2.putText(image, f'{label_name} ({class_probs[class_index]:.2f})',
+                    (x_top_left, y_top_left + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+    else:
+        print("Warning: Invalid box coordinates")
+
+    return image
+
+
+if __name__ == '__main__':
     main()
