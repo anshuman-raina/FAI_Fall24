@@ -67,7 +67,7 @@ Mean Squared Error for bounding box prediction
 - **PyTorch**
 - **OpenCV**
 - **CUDA**: Recommended for GPU acceleration
-- 
+
 ## Getting Started
 
 ```bash
