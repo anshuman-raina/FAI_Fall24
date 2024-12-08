@@ -20,19 +20,19 @@ def parse_yolov5_obb(annotations_dir, image_folder):
                     continue
 
                 try:
-                    # Extract corner coordinates
+
                     x1, y1 = float(parts[0]), float(parts[1])
                     x2, y2 = float(parts[2]), float(parts[3])
                     x3, y3 = float(parts[4]), float(parts[5])
                     x4, y4 = float(parts[6]), float(parts[7])
 
-                    # Find top-left and bottom-right coordinates
+
                     top_left_x = min(x1, x2, x3, x4)
                     top_left_y = max(y1, y2, y3, y4)
                     bottom_right_x = max(x1, x2, x3, x4)
                     bottom_right_y = min(y1, y2, y3, y4)
 
-                    # Extract label
+
                     label_name = parts[8]
                     label_map = {"empty-shelf": 0, "product": 1}
                     label = label_map.get(label_name, 0)

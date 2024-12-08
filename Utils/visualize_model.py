@@ -5,7 +5,7 @@ def visualize_detailed_cnn():
     fig = plt.figure(figsize=(20, 8))
     ax = fig.add_subplot(111)
     
-    # Layer configurations with detailed shapes
+
     layers = [
         {'name': 'Input', 'shape': '8@128x128', 'type': 'input', 'kernel': None},
         {'name': 'Conv1', 'shape': '24@48x48', 'type': 'conv', 'kernel': '3x3'},
@@ -16,7 +16,7 @@ def visualize_detailed_cnn():
         {'name': 'Output', 'shape': '1x128', 'type': 'output', 'kernel': None}
     ]
     
-    # Enhanced colors and styling
+
     colors = {
         'input': '#E6F3FF',    # Light blue
         'conv': '#FFE6E6',     # Light red
@@ -28,24 +28,24 @@ def visualize_detailed_cnn():
     x_start = 1
     x_spacing = 2.5
     
-    # Draw feature extraction part
+
     for i, layer in enumerate(layers):
         x = x_start + i * x_spacing
         
         if layer['type'] in ['input', 'conv', 'pool']:
-            # Draw stacked feature maps
+
             num_squares = 5 if layer['type'] != 'input' else 3
             square_size = 1.5 if layer['type'] == 'input' else 1.2
             
-            # Draw main squares with 3D effect
+
             for j in range(num_squares):
                 offset = j * 0.15
-                # Draw shadow
+
                 shadow = plt.Rectangle((x + offset + 0.05, 2 + offset - 0.05), 
                                     square_size, square_size,
                                     facecolor='gray', alpha=0.2)
                 ax.add_patch(shadow)
-                # Draw main square
+
                 rect = plt.Rectangle((x + offset, 2 + offset), 
                                    square_size, square_size,
                                    facecolor=colors[layer['type']],
@@ -53,7 +53,7 @@ def visualize_detailed_cnn():
                                    linewidth=1.5)
                 ax.add_patch(rect)
                 
-                # Add kernel visualization for conv/pool layers
+
                 if layer['type'] in ['conv', 'pool'] and j == num_squares-1:
                     kernel_size = 0.3
                     kernel = plt.Rectangle((x + offset + square_size - kernel_size/2,
@@ -62,8 +62,8 @@ def visualize_detailed_cnn():
                                         facecolor='red', alpha=0.5)
                     ax.add_patch(kernel)
         
-        else:  # Dense and output layers
-            # Draw neurons
+        else:
+
             neuron_spacing = 0.3
             num_neurons = 4
             for j in range(num_neurons):
@@ -73,7 +73,7 @@ def visualize_detailed_cnn():
                                   edgecolor='black')
                 ax.add_patch(circle)
             
-            # Add dots for more neurons
+
             plt.plot([x], [2 + num_neurons * neuron_spacing + 0.2], 'k.')
             plt.plot([x], [2 + num_neurons * neuron_spacing + 0.4], 'k.')
         

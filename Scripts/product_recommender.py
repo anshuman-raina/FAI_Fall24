@@ -5,7 +5,7 @@ import easyocr
 import logging
 import os
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-# Configure logging
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -96,9 +96,9 @@ def extract_text(image, coordinates):
         x2 = max(0, min(x2, width))
         y1 = max(0, min(y1, height))
         y2 = max(0, min(y2, height))
-        # Ensure coordinates are valid
-        x1, x2 = sorted([x1, x2])  # Corrects x-coordinates
-        y1, y2 = sorted([y1, y2])  # Corrects y-coordinates
+
+        x1, x2 = sorted([x1, x2])
+        y1, y2 = sorted([y1, y2])
         cropped = image[y1:y2, x1:x2]
         if cropped.size == 0:
             logger.warning("Cropped image is empty")
@@ -115,22 +115,22 @@ def display_results(image, coordinates, detected_text, output_path, label=None, 
     try:
         x1, y1, x2, y2 = coordinates
         
-        # Different colors and labels based on detection type
+
         if is_empty_shelf:
-            color = (0, 255, 0)  # Green for empty shelf
+            color = (0, 255, 0)
             label_text = "Empty Shelf"
         else:
-            color = (255, 0, 0)  # Blue for product
+            color = (255, 0, 0)
             label_text = "Product" if label is None else f"Product {label}"
         
-        # Draw bounding box
+
         cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
         
-        # Add label above the bounding box
+
         cv2.putText(image, label_text, (x1, y1 - 10), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         
-        # Add detected text
+
         # y_text = y1 - 30
         # for text_obj in detected_text:
         #     text = f"{text_obj['text']} ({text_obj['confidence']:.2f})"

@@ -5,7 +5,7 @@ import tensorflow as tf
 import logging
 import os
 
-# Configure logging
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def preprocess_image(image_path, target_size=(640, 640)):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         image = cv2.resize(image, target_size)
         image = image.astype(np.float32) / 255.0
-        preprocessed = np.expand_dims(image, axis=(0, -1))  # Add batch and channel dimensions
+        preprocessed = np.expand_dims(image, axis=(0, -1))
         logger.info(f"Preprocessed image shape: {preprocessed.shape}")
         return preprocessed
     except Exception as e:
@@ -41,7 +41,7 @@ def predict_coordinates(model, preprocessed_image, original_image_shape=(640, 64
         
         original_height, original_width = original_image_shape[:2]
         
-        # Extract predicted bounding box
+
         pred_bbox = [
             int(pred_bbox[0, 0] * original_width),
             int(pred_bbox[0, 1] * original_height),
@@ -84,9 +84,9 @@ def extract_text(image_path, coordinates):
         x2 = max(0, min(x2, width))
         y1 = max(0, min(y1, height))
         y2 = max(0, min(y2, height))
-        # Ensure coordinates are valid
-        x1, x2 = sorted([x1, x2])  # Corrects x-coordinates
-        y1, y2 = sorted([y1, y2])  # Corrects y-coordinates
+
+        x1, x2 = sorted([x1, x2])
+        y1, y2 = sorted([y1, y2])
         cropped = image[y1:y2, x1:x2]
         logger.info(f"Cropped dimensions: {cropped.shape}")
         if cropped.size == 0:
@@ -106,20 +106,20 @@ def display_results(image_path, coordinates, detected_text):
     
     logger.info("Displaying results")
     
-    # Ensure output directory exists
+
     os.makedirs(output_dir, exist_ok=True)
     
-    # Load the image
+
     image = cv2.imread(image_path)
     if image is None:
         logger.error(f"Failed to load image at: {image_path}")
         return
     
-    # Draw rectangle around detected object
+
     x1, y1, x2, y2 = coordinates
     cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
     
-    # Add detected text with confidence
+
     y_text = y1 - 10
     for text_obj in detected_text:
         text = f"{text_obj['text']} ({text_obj['confidence']:.2f})"
@@ -127,8 +127,8 @@ def display_results(image_path, coordinates, detected_text):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         y_text -= 20
     
-    # Construct output path
-    image_name = os.path.basename(image_path)  # Extract filename
+
+    image_name = os.path.basename(image_path)
     output_path = os.path.join(output_dir, f"annotated_{image_name}")
     
     # Save the annotated image

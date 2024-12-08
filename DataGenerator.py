@@ -33,7 +33,7 @@ class DataGenerator(Sequence):
 
             original_height, original_width = image.shape[:2]
 
-            # Original bounding box (absolute coordinates)
+
             bbox = [
                 int(row['bbox_x']),
                 int(row['bbox_y']),

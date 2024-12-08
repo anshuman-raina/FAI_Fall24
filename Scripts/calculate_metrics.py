@@ -8,33 +8,33 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from sklearn.metrics import precision_recall_curve, ConfusionMatrixDisplay
 
-# Set up logging
+
 logging.basicConfig(level=logging.INFO)
 
 
 def main():
     try:
-        # Load the trained model
+
         model = load_model('empty_shelf_detector_rcnn_resnet-product_only.h5', compile=False)
         logging.info("Model loaded successfully")
 
-        # Define dataset directories
+
         datasets = {
             'test': ('EMPTY SHELF FINAL/EMPTY SHELF FINAL/test/labelTxt', 'metricFinal/images'),
         # 'valid': ('EMPTY SHELF FINAL/EMPTY SHELF FINAL/valid/labelTxt', 'EMPTY SHELF FINAL/EMPTY SHELF FINAL/valid/images'),
             }
 
-        # Evaluate on datasets
+
         for split, (annotations_dir, image_folder) in datasets.items():
             logging.info(f"Evaluating on {split} dataset...")
 
-            # Parse the annotations and load the dataset
+
             data = parse_yolov5_obb(annotations_dir, image_folder)
             if data.empty:
                 logging.warning(f"No data found in {split} dataset!")
                 continue
 
-            # Evaluate model performance
+
             logging.info(f"Starting evaluation for {split} dataset...")
             evaluate_model(model, data, image_folder=image_folder)
             logging.info(f"Completed evaluation for {split} dataset.")
@@ -43,33 +43,33 @@ def main():
         logging.error(f"An error occurred: {str(e)}")
 
 def compute_and_visualize_metrics(iou_scores, iou_threshold=0.2):
-    # Plot IoU Distribution
+
     plt.figure()
     plt.hist(iou_scores, bins=20, range=(0, 1), alpha=0.75)
     plt.title("IoU Distribution")
     plt.xlabel("IoU")
     plt.ylabel("Frequency")
 
-    # Multiply y-axis values by 10 using a custom formatter
+
     ax = plt.gca()
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: int(x * 10)))
 
-    # Add threshold line
+
     plt.axvline(x=iou_threshold, color='red', linestyle='--', label=f'Threshold={iou_threshold}')
     plt.legend()
 
-    # Show the plot
+
     plt.show()
 
 def calculate_iou(true_bbox, pred_bbox):
-    # Calculate intersection coordinates
+
     int_x1 = max(true_bbox[0], pred_bbox[0])  # Left boundary of intersection
     int_y1 = min(true_bbox[1], pred_bbox[1])  # Top boundary of intersection (max y-value)
     int_x2 = min(true_bbox[2], pred_bbox[2])  # Right boundary of intersection
     int_y2 = max(true_bbox[3], pred_bbox[3])  # Bottom boundary of intersection (min y-value)
 
-    # Ensure intersection dimensions are valid
-    if int_x1 < int_x2 and int_y2 < int_y1:  # Check for valid intersection
+
+    if int_x1 < int_x2 and int_y2 < int_y1:
         intersection = (int_x2 - int_x1) * (int_y1 - int_y2)
     else:
         intersection = 0

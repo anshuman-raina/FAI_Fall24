@@ -4,7 +4,7 @@
 # In[ ]:
 
 
-# Import necessary libraries
+
 import tensorflow as tf
 from tensorflow.keras import layers, models, Input
 import pandas as pd
@@ -19,7 +19,7 @@ from google.colab.patches import cv2_imshow
 # In[ ]:
 
 
-# Upload files
+
 print("Please upload the CSV file:")
 uploaded_csv = files.upload()
 
@@ -34,21 +34,21 @@ uploaded_images = files.upload()
 # In[ ]:
 
 
-# If the images are uploaded as a zip, unzip the file
+
 if len(uploaded_images) == 1 and list(uploaded_images.keys())[0].endswith('.zip'):
     import zipfile
     with zipfile.ZipFile(list(uploaded_images.keys())[0], 'r') as zip_ref:
         zip_ref.extractall('/content/images/')
     image_folder_path = '/content/images/Nikhil'
 else:
-    # Otherwise, move the images to a folder
+
     os.makedirs('images', exist_ok=True)
     for filename, content in uploaded_images.items():
         with open(os.path.join('images', filename), 'wb') as f:
             f.write(content)
     image_folder_path = 'images/'
 
-# Load the uploaded CSV file
+
 csv_filename = list(uploaded_csv.keys())[0]
 csv_file_path = f'/content/{csv_filename}'
 
@@ -56,7 +56,7 @@ def load_csv_data(csv_file):
     data = pd.read_csv(csv_file)
     return data
 
-# Load data from the CSV
+
 data = load_csv_data(csv_file_path)
 
 
@@ -64,31 +64,31 @@ data = load_csv_data(csv_file_path)
 
 
 def preprocess_image(image_path, bbox, target_size=(256, 256)):
-    # Load the image
+
     image = cv2.imread(image_path)
     original_height, original_width = image.shape[:2]
 
-    # Normalize bounding box coordinates relative to the image size
+
     x_min = bbox['bbox_x'] / original_width
     y_min = bbox['bbox_y'] / original_height
     x_max = (bbox['bbox_x'] + bbox['bbox_width']) / original_width
     y_max = (bbox['bbox_y'] + bbox['bbox_height']) / original_height
 
-    # Resize image to target size for the model
+
     image = cv2.resize(image, target_size)
 
-    # Normalize image values to range [0, 1]
+
     image = image.astype(np.float32) / 255.0
 
-    # Return the preprocessed image and the normalized bounding box
+
     return image, np.array([x_min, y_min, x_max, y_max])
 
 def compile_rcnn_model(model):
-    # Compile the model
+
     model.compile(
         optimizer='adam',
         loss={
-            'classification_output': 'binary_crossentropy',  # Loss for binary classification
+            'classification_output': 'binary_crossentropy',
             'bbox_output': 'mean_squared_error'  # Loss for bounding box regression
         },
         metrics={

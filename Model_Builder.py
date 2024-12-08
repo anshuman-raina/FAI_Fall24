@@ -14,10 +14,10 @@ def main():
     parser.add_argument('--batch_size', type=int, default=100, help='Batch size for training')
     args = parser.parse_args()
 
-    # Load data
+
     data = parse_yolov5_obb(args.annotations_dir, args.image_folder)
 
-    # Initialize data generator
+
     train_generator = DataGenerator(
         dataframe=data,
         image_folder=args.image_folder,
@@ -25,7 +25,7 @@ def main():
         target_size=(640, 640),
     )
 
-    # Build and compile model
+
     tf.keras.backend.clear_session()
 
     model = build_cnn_model_with_residuals(input_shape=(640, 640,1))
